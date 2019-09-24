@@ -16,9 +16,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class RouterCompletionHandler implements CompletionHandler<AsynchronousSocketChannel, Object> {
-    private Logger log = LoggerFactory.getLogger(RouterCompletionHandler.class);
+    private static Logger log = LoggerFactory.getLogger(RouterCompletionHandler.class);
     private static final int EXECUTOR_THREADS = 5;
-    private static final String EMPTY_MESSAGE = "";
 
 
     private final ExecutorService executor = Executors.newFixedThreadPool(EXECUTOR_THREADS);
@@ -36,36 +35,19 @@ public class RouterCompletionHandler implements CompletionHandler<AsynchronousSo
         this.messageHandler = messageHandler;
     }
 
-    private static String readMessage(AsynchronousSocketChannel channel, ByteBuffer readBuffer) {
-        try {
-            int bytesRead = channel.read(readBuffer).get();
-            if (bytesRead != -1) {
-                readBuffer.flip();
-                byte[] bytes = new byte[bytesRead];
-                readBuffer.get(bytes, 0, bytesRead);
-                readBuffer.clear();
-                String message = new String(bytes);
-                System.out.println("Got: " + message);
-                return message;
-            }
-            return EMPTY_MESSAGE;
-        } catch (InterruptedException | ExecutionException e1) {
-            e1.printStackTrace();
-            return EMPTY_MESSAGE;
-        }
-    }
+
 
     @Override
     public void completed(AsynchronousSocketChannel channel, Object attachment) {
         listener.accept(null, this);
         final ByteBuffer buffer = ByteBuffer.allocate(Common.BUFFER_SIZE);
-        clientName = readMessage(channel, buffer);
+        clientName = Common.readMessage(channel, buffer);
 
         sendClientId(channel, getNextId());
 
         while (true) {
-            final String message = readMessage(channel, buffer);
-            if (EMPTY_MESSAGE.equals(message)) {
+            final String message = Common.readMessage(channel, buffer);
+            if (Common.EMPTY_MESSAGE.equals(message)) {
                 break;
             }
             executor.execute(() -> messageHandler.handle(channel, message));

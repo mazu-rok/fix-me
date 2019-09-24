@@ -10,7 +10,7 @@ public class ChecksumValidator extends MessageHandler{
     @Override
     public void handle(AsynchronousSocketChannel clientChannel, String message) {
         try {
-            final String calculatedChecksum = calculateChecksum(getMessageWithoutChecksum(message));
+            final String calculatedChecksum = Common.calculateChecksum(getMessageWithoutChecksum(message));
             final String messageChecksum;
             messageChecksum = Common.getFixValueByTag(message, FixTag.CHECKSUM);
             final boolean isValidChecksum = calculatedChecksum.equals(messageChecksum);
@@ -22,15 +22,6 @@ public class ChecksumValidator extends MessageHandler{
         } catch (Exception e) {
             e.printStackTrace();
         }
-    }
-
-    private static String calculateChecksum(String message) {
-        final byte[] bytes = message.getBytes();
-        int sum = 0;
-        for (byte aByte : bytes) {
-            sum += aByte;
-        }
-        return String.format("%03d", sum % 256);
     }
 
     private static String getMessageWithoutChecksum(String fixMessage) {
