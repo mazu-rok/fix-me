@@ -8,4 +8,3 @@ public enum MessageType {
         return type.toUpperCase().equals(BUY.toString()) || type.equals(SELL.toString());
     }
 }
-    

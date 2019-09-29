@@ -1,7 +1,7 @@
 package com.amazurok.fixme.broker.handler;
 
 import com.amazurok.fixme.common.Common;
-import com.amazurok.fixme.common.FixTag;
+import com.amazurok.fixme.common.Tags;
 import com.amazurok.fixme.common.Result;
 import com.amazurok.fixme.common.handler.MessageHandler;
 import org.slf4j.Logger;
@@ -16,7 +16,7 @@ public class ResultTagValidator extends MessageHandler {
     public void handle(AsynchronousSocketChannel clientChannel, String message) {
         final String result;
         try {
-            result = Common.getFixValueByTag(message, FixTag.RESULT);
+            result = Common.getFixValueByTag(message, Tags.RESULT);
         } catch (Exception ex) {
             System.out.println(ex.getMessage());
             return;

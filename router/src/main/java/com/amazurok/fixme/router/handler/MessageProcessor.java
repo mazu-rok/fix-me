@@ -1,7 +1,7 @@
 package com.amazurok.fixme.router.handler;
 
 import com.amazurok.fixme.common.Common;
-import com.amazurok.fixme.common.FixTag;
+import com.amazurok.fixme.common.Tags;
 import com.amazurok.fixme.common.handler.MessageHandler;
 
 import java.nio.channels.AsynchronousSocketChannel;
@@ -22,7 +22,7 @@ public class MessageProcessor extends MessageHandler {
     public void handle(AsynchronousSocketChannel clientChannel, String message) {
         System.out.println("Processing message: " + message);
         try {
-            final String targetName = Common.getFixValueByTag(message, FixTag.TARGET_NAME);
+            final String targetName = Common.getFixValueByTag(message, Tags.DST_NAME);
             final AsynchronousSocketChannel targetChannel = routingTable.get(targetName);
             if (targetChannel != null) {
                 Common.sendMessage(targetChannel, message);

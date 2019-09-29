@@ -1,7 +1,7 @@
 package com.amazurok.fixme.market.handler;
 
 import com.amazurok.fixme.common.Common;
-import com.amazurok.fixme.common.FixTag;
+import com.amazurok.fixme.common.Tags;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -21,12 +21,12 @@ public class MessageExecutor extends MarketMessageHandler {
     @Override
     public void handle(AsynchronousSocketChannel clientChannel, String message) {
         try {
-            final String instrument = Common.getFixValueByTag(message, FixTag.INSTRUMENT);
+            final String instrument = Common.getFixValueByTag(message, Tags.PRODUCT);
             if (instruments.containsKey(instrument)) {
-                final int quantity = Integer.parseInt(Common.getFixValueByTag(message, FixTag.QUANTITY));
+                final int quantity = Integer.parseInt(Common.getFixValueByTag(message, Tags.AMOUNT));
                 final int marketQuantity = instruments.get(instrument);
-                final String type = Common.getFixValueByTag(message, FixTag.TYPE);
-                if (type.equals(MessageType.Buy.toString())) {
+                final String type = Common.getFixValueByTag(message, Tags.ACTION);
+                if (type.equals(MessageType.BUY.toString())) {
                     if (marketQuantity < quantity) {
                         rejectedMessage(clientChannel, message, "Not enough instruments");
                         return;

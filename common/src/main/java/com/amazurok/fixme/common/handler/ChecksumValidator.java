@@ -1,7 +1,7 @@
 package com.amazurok.fixme.common.handler;
 
 import com.amazurok.fixme.common.Common;
-import com.amazurok.fixme.common.FixTag;
+import com.amazurok.fixme.common.Tags;
 
 import java.nio.channels.AsynchronousSocketChannel;
 
@@ -12,7 +12,7 @@ public class ChecksumValidator extends MessageHandler{
         try {
             final String calculatedChecksum = Common.calculateChecksum(getMessageWithoutChecksum(message));
             final String messageChecksum;
-            messageChecksum = Common.getFixValueByTag(message, FixTag.CHECKSUM);
+            messageChecksum = Common.getFixValueByTag(message, Tags.CHECKSUM);
             final boolean isValidChecksum = calculatedChecksum.equals(messageChecksum);
             if (isValidChecksum) {
                super.handle(clientChannel, message);
@@ -25,7 +25,7 @@ public class ChecksumValidator extends MessageHandler{
     }
 
     private static String getMessageWithoutChecksum(String fixMessage) {
-        final int checksumIndex = fixMessage.lastIndexOf(FixTag.CHECKSUM.getValue() + Common.TAG_VALUE_DELIMITER);
+        final int checksumIndex = fixMessage.lastIndexOf(Tags.CHECKSUM.ordinal() + Common.TAG_VALUE_DELIMITER);
         return fixMessage.substring(0, checksumIndex);
     }
 

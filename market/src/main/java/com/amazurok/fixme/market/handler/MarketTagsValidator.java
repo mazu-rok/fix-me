@@ -1,7 +1,7 @@
 package com.amazurok.fixme.market.handler;
 
 import com.amazurok.fixme.common.Common;
-import com.amazurok.fixme.common.FixTag;
+import com.amazurok.fixme.common.Tags;
 
 import java.nio.channels.AsynchronousSocketChannel;
 
@@ -14,9 +14,9 @@ public class MarketTagsValidator extends MarketMessageHandler {
     @Override
     public void handle(AsynchronousSocketChannel clientChannel, String message) {
         try {
-            Common.getFixValueByTag(message, FixTag.INSTRUMENT);
-            final int price = Integer.parseInt(Common.getFixValueByTag(message, FixTag.PRICE));
-            final int quantity = Integer.parseInt(Common.getFixValueByTag(message, FixTag.QUANTITY));
+            Common.getFixValueByTag(message, Tags.PRODUCT);
+            final int price = Integer.parseInt(Common.getFixValueByTag(message, Tags.PRICE));
+            final int quantity = Integer.parseInt(Common.getFixValueByTag(message, Tags.AMOUNT));
             if (quantity <= 0 || quantity > 10000) { //TODO check max val
                 rejectedMessage(clientChannel, message, "Wrong quantity(1-10k)");
                 return;
@@ -25,7 +25,7 @@ public class MarketTagsValidator extends MarketMessageHandler {
                 return;
             }
 
-            final String type = Common.getFixValueByTag(message, FixTag.TYPE);
+            final String type = Common.getFixValueByTag(message, Tags.ACTION);
             if (MessageType.is(type)) {
                 super.handle(clientChannel, message);
             } else {

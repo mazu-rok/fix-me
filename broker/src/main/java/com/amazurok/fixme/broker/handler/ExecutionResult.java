@@ -1,7 +1,7 @@
 package com.amazurok.fixme.broker.handler;
 
 import com.amazurok.fixme.common.Common;
-import com.amazurok.fixme.common.FixTag;
+import com.amazurok.fixme.common.Tags;
 import com.amazurok.fixme.common.handler.MessageHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,8 +14,8 @@ public class ExecutionResult extends MessageHandler {
     @Override
     public void handle(AsynchronousSocketChannel clientChannel, String message) {
         try {
-            final String result = Common.getFixValueByTag(message, FixTag.RESULT);
-            final String resultMessage = Common.getFixValueByTag(message, FixTag.MESSAGE);
+            final String result = Common.getFixValueByTag(message, Tags.RESULT);
+            final String resultMessage = Common.getFixValueByTag(message, Tags.MESSAGE);
 
             log.info("Operation result: " + result + " - " + resultMessage);
             super.handle(clientChannel, message);

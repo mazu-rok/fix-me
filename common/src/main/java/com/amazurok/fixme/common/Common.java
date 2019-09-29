@@ -59,16 +59,16 @@ public class Common {
         return String.format("%03d", sum % 256);
     }
 
-    public static void addTag(StringBuilder builder, FixTag tag, String value) {
-        builder.append(tag.getValue())
+    public static void addTag(StringBuilder builder, Tags tag, String value) {
+        builder.append(tag.ordinal())
                 .append(TAG_VALUE_DELIMITER)
                 .append(value)
                 .append(FIELD_DELIMITER);
     }
 
-    public static String getFixValueByTag(String fixMessage, FixTag tag) throws Exception {
+    public static String getFixValueByTag(String fixMessage, Tags tag) throws Exception {
         final String[] tagValues = fixMessage.split(Pattern.quote(FIELD_DELIMITER));
-        final String searchPattern = tag.getValue() + TAG_VALUE_DELIMITER;
+        final String searchPattern = tag.ordinal() + TAG_VALUE_DELIMITER;
         for (String tagValue : tagValues) {
             if (tagValue.startsWith(searchPattern)) {
                 return tagValue.substring(searchPattern.length());

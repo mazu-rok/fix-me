@@ -1,7 +1,7 @@
 package com.amazurok.fixme.common.handler;
 
 import com.amazurok.fixme.common.Common;
-import com.amazurok.fixme.common.FixTag;
+import com.amazurok.fixme.common.Tags;
 
 import java.nio.channels.AsynchronousSocketChannel;
 
@@ -10,10 +10,10 @@ public class TagsValidator extends MessageHandler {
     public void handle(AsynchronousSocketChannel clientChannel, String message) {
         try {
             final String sourceId;
-            sourceId = Common.getFixValueByTag(message, FixTag.ID);
-            Common.getFixValueByTag(message, FixTag.SOURCE_NAME);
-            Common.getFixValueByTag(message, FixTag.TARGET_NAME);
-            final String checksum = Common.getFixValueByTag(message, FixTag.CHECKSUM);
+            sourceId = Common.getFixValueByTag(message, Tags.ID);
+            Common.getFixValueByTag(message, Tags.SRC_NAME);
+            Common.getFixValueByTag(message, Tags.DST_NAME);
+            final String checksum = Common.getFixValueByTag(message, Tags.CHECKSUM);
 
             Integer.parseInt(sourceId);
             Integer.parseInt(checksum);

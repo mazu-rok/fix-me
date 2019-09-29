@@ -1,10 +1,10 @@
 package com.amazurok.fixme.common;
 
 public enum Result {
-    Executed,
-    Rejected;
+    EXECUTED,
+    REJECTED;
 
     public static boolean is(String result) {
-        return result.equals(Executed.toString()) || result.equals(Rejected.toString());
+        return result.toUpperCase().equals(EXECUTED.toString()) || result.toUpperCase().equals(REJECTED.toString());
     }
 }

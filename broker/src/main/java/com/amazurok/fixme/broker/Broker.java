@@ -4,7 +4,7 @@ import com.amazurok.fixme.broker.handler.ExecutionResult;
 import com.amazurok.fixme.broker.handler.ResultTagValidator;
 import com.amazurok.fixme.common.Client;
 import com.amazurok.fixme.common.Common;
-import com.amazurok.fixme.common.FixTag;
+import com.amazurok.fixme.common.Tags;
 import com.amazurok.fixme.common.handler.MessageHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,7 +18,7 @@ public class Broker extends Client{
     private static Logger log = LoggerFactory.getLogger(Broker.class);
 
     private static final String USER_INPUT_DELIMITER = " ";
-    private static final String USER_MESSAGE_FORMAT = "'MARKET_NAME BUY_OR_SELL INSTRUMENT_NAME QUANTITY PRICE'";
+    private static final String USER_MESSAGE_FORMAT = "'MARKET_NAME BUY_OR_SELL PRODUCT_NAME AMOUNT PRICE'";
 
     private static final String TAG_VALUE_DELIMITER = "=";
     private static final String FIELD_DELIMITER = "|";
@@ -35,14 +35,14 @@ public class Broker extends Client{
             throw new Exception("Wrong input, should be: " + USER_MESSAGE_FORMAT);
         }
         final StringBuilder builder = new StringBuilder();
-        addTag(builder, FixTag.ID, id);
-        addTag(builder, FixTag.SOURCE_NAME, name);
-        addTag(builder, FixTag.TARGET_NAME, m[0]);
-        addTag(builder, FixTag.TYPE, m[1]);
-        addTag(builder, FixTag.INSTRUMENT, m[2]);
-        addTag(builder, FixTag.QUANTITY, m[3]);
-        addTag(builder, FixTag.PRICE, m[4]);
-        addTag(builder, FixTag.CHECKSUM, Common.calculateChecksum(builder.toString()));
+        addTag(builder, Tags.ID, id);
+        addTag(builder, Tags.SRC_NAME, name);
+        addTag(builder, Tags.DST_NAME, m[0]);
+        addTag(builder, Tags.ACTION, m[1]);
+        addTag(builder, Tags.PRODUCT, m[2]);
+        addTag(builder, Tags.AMOUNT, m[3]);
+        addTag(builder, Tags.PRICE, m[4]);
+        addTag(builder, Tags.CHECKSUM, Common.calculateChecksum(builder.toString()));
         return builder.toString();
     }
 

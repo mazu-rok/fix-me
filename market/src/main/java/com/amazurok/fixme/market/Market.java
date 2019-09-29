@@ -17,7 +17,7 @@ import java.util.concurrent.TimeUnit;
 public class Market extends Client {
     private static Logger log = LoggerFactory.getLogger(Market.class);
 
-    private static final String[] INSTRUMENTS = {
+    private static final String[] PRODUCTS = {
             "bolt", "nail", "screwdriver", "screw",
             "hammer", "saw", "drill", "wrench", "knife",
             "scissors", "toolbox", "tape", "needle"
@@ -35,7 +35,7 @@ public class Market extends Client {
     private static Map<String, Integer> getRandomInstruments() {
         final Map<String, Integer> instruments = new HashMap<String, Integer>();
         final Random random = new Random();
-        for(String instrument : INSTRUMENTS) {
+        for(String instrument : PRODUCTS) {
             if (random.nextBoolean()) {
                 instruments.put(instrument, random.nextInt(9) + 1);
             }
