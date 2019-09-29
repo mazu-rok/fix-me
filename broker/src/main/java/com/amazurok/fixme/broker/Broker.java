@@ -1,7 +1,7 @@
-package com.amazurok.broker;
+package com.amazurok.fixme.broker;
 
-import com.amazurok.broker.handler.ExecutionResult;
-import com.amazurok.broker.handler.ResultTagValidator;
+import com.amazurok.fixme.broker.handler.ExecutionResult;
+import com.amazurok.fixme.broker.handler.ResultTagValidator;
 import com.amazurok.fixme.common.Client;
 import com.amazurok.fixme.common.Common;
 import com.amazurok.fixme.common.FixTag;
@@ -10,8 +10,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Scanner;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+
+import static com.amazurok.fixme.common.Common.addTag;
 
 public class Broker extends Client{
     private static Logger log = LoggerFactory.getLogger(Broker.class);
@@ -26,13 +27,6 @@ public class Broker extends Client{
 
     public Broker(String name) {
         super(Common.BROKER_PORT, NAME_PREFIX + name);
-    }
-
-    private static void addTag(StringBuilder builder, FixTag tag, String value) {
-        builder.append(tag.getValue())
-                .append(TAG_VALUE_DELIMITER)
-                .append(value)
-                .append(FIELD_DELIMITER);
     }
 
     public static String userInputToFixMessage(String input, String id, String name) throws Exception {
@@ -85,8 +79,8 @@ public class Broker extends Client{
 
 
     public static void main(String[] args) {
-        if (args.length == 2) {
-            new Broker(args[1]).start();
+        if (args.length == 1) {
+            new Broker(args[0]).start();
         } else {
             log.error("Wrong number of arguments[{}]", args);
             throw new IllegalArgumentException("Only one argument is supported");

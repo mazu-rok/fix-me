@@ -25,7 +25,7 @@ public class Common {
 
 
     public static Future<Integer> sendMessage(AsynchronousSocketChannel channel, String message) {
-        log.error(String.format("Send message: %s", message));
+        log.info(String.format("Send message: %s", message));
         return channel.write(ByteBuffer.wrap(message.getBytes()));
     }
 
@@ -57,6 +57,13 @@ public class Common {
             sum += aByte;
         }
         return String.format("%03d", sum % 256);
+    }
+
+    public static void addTag(StringBuilder builder, FixTag tag, String value) {
+        builder.append(tag.getValue())
+                .append(TAG_VALUE_DELIMITER)
+                .append(value)
+                .append(FIELD_DELIMITER);
     }
 
     public static String getFixValueByTag(String fixMessage, FixTag tag) throws Exception {
