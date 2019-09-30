@@ -23,7 +23,7 @@ public class Market extends Client {
             "scissors", "toolbox", "tape", "needle"
     };
 
-    private static final String NAME_PREFIX = "M";
+    private static final String NAME_PREFIX = "M_";
     private final Map<String, Integer> instruments;
 
     private Market(String name) {

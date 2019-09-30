@@ -1,10 +1,15 @@
 package com.amazurok.fixme.common;
 
+import com.amazurok.fixme.common.exception.NotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.xml.bind.DatatypeConverter;
 import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousSocketChannel;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.regex.Pattern;
@@ -16,8 +21,8 @@ public class Common {
     public static final int BROKER_PORT = 5000;
     public static final int MARKET_PORT = 5001;
     public static final int BUFFER_SIZE = 4096;
-    public static final String TAG_VALUE_DELIMITER = "=";
-    public static final String INTERNAL_MESSAGE = "INTERNAL_MESSAGE:";
+    public static final String VALUE_DELIMITER = "=";
+    public static final String ERROR_MESSAGE = "ERROR_MESSAGE:";
     public static final String EMPTY_MESSAGE = "";
 
 
@@ -50,36 +55,34 @@ public class Common {
         return EMPTY_MESSAGE;
     }
 
-    public static String calculateChecksum(String message) {
-        final byte[] bytes = message.getBytes();
-        int sum = 0;
-        for (byte aByte : bytes) {
-            sum += aByte;
-        }
-        return String.format("%03d", sum % 256);
+    public static String getChecksum(String message) throws NoSuchAlgorithmException {
+        MessageDigest digest = MessageDigest.getInstance("SHA-256");
+        byte[] hash = digest.digest(message.getBytes(StandardCharsets.UTF_8));
+        return DatatypeConverter.printHexBinary(hash).toLowerCase();
     }
 
-    public static void addTag(StringBuilder builder, Tags tag, String value) {
+    public static void addTag(StringBuilder builder, FIXMessage tag, String value) {
         builder.append(tag.ordinal())
-                .append(TAG_VALUE_DELIMITER)
+                .append(VALUE_DELIMITER)
                 .append(value)
                 .append(FIELD_DELIMITER);
     }
 
-    public static String getFixValueByTag(String fixMessage, Tags tag) throws Exception {
+    //TODO: Add regex
+    public static String getValueFromFIXMesage(String fixMessage, FIXMessage field) throws NotFoundException {
         final String[] tagValues = fixMessage.split(Pattern.quote(FIELD_DELIMITER));
-        final String searchPattern = tag.ordinal() + TAG_VALUE_DELIMITER;
+        final String searchPattern = field.ordinal() + VALUE_DELIMITER;
         for (String tagValue : tagValues) {
             if (tagValue.startsWith(searchPattern)) {
                 return tagValue.substring(searchPattern.length());
             }
         }
-        throw new Exception("No '" + tag + "' tag in message + '" + fixMessage + "'");
+        throw new NotFoundException(String.format("Field value '%s' not found in message '%s'", field, fixMessage));
     }
 
-    public static Future<Integer> sendInternalMessage(AsynchronousSocketChannel channel, String message) {
-        log.info("Send internal: " + message);
-        final String internalMessage = INTERNAL_MESSAGE + message;
-        return channel.write(ByteBuffer.wrap(internalMessage.getBytes()));
+    public static void sendErrorMessage(AsynchronousSocketChannel channel, String message) {
+        log.error("Send error message: " + message);
+        final String internalMessage = ERROR_MESSAGE + message;
+        channel.write(ByteBuffer.wrap(internalMessage.getBytes()));
     }
 }

@@ -4,10 +4,10 @@ import com.amazurok.fixme.common.Common;
 
 import java.nio.channels.AsynchronousSocketChannel;
 
-public class InternalMessageHandler extends MessageHandler {
+public class ErrorMessageHandler extends MessageHandler {
     @Override
     public void handle(AsynchronousSocketChannel clientChannel, String message) {
-        if (!message.startsWith(Common.INTERNAL_MESSAGE)) {
+        if (!message.startsWith(Common.ERROR_MESSAGE)) {
             super.handle(clientChannel, message);
         }
     }

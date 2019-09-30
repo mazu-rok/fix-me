@@ -1,8 +1,8 @@
 package com.amazurok.fixme.market.handler;
 
 import com.amazurok.fixme.common.Common;
-import com.amazurok.fixme.common.Tags;
-import com.amazurok.fixme.common.Result;
+import com.amazurok.fixme.common.FIXMessage;
+import com.amazurok.fixme.common.ResultMessage;
 import com.amazurok.fixme.common.handler.MessageHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,28 +24,29 @@ public abstract class MarketMessageHandler extends MessageHandler {
     }
 
     protected void rejectedMessage(AsynchronousSocketChannel clientChannel, String fixMessage, String message) {
-        sendMessage(clientChannel, fixMessage, message, Result.REJECTED);
+        sendMessage(clientChannel, fixMessage, message, ResultMessage.REJECTED);
     }
 
     protected void executedMessage(AsynchronousSocketChannel clientChannel, String fixMessage, String message) {
-        sendMessage(clientChannel, fixMessage, message, Result.EXECUTED);
+        sendMessage(clientChannel, fixMessage, message, ResultMessage.EXECUTED);
     }
 
-    public static String resultFixMessage(String message, String id, String srcName, String targetName, Result result) {
+    public static String resultFixMessage(String message, String id, String srcName, String targetName, ResultMessage result) {
         final StringBuilder builder = new StringBuilder();
-        addTag(builder, Tags.ID, id);
-        addTag(builder, Tags.SRC_NAME, srcName);
-        addTag(builder, Tags.DST_NAME, targetName);
-        addTag(builder, Tags.RESULT, result.toString());
-        addTag(builder, Tags.MESSAGE, message);
-        addTag(builder, Tags.CHECKSUM, calculateChecksum(builder.toString()));
+        addTag(builder, FIXMessage.ID, id);
+        addTag(builder, FIXMessage.MARKET, srcName);
+        addTag(builder, FIXMessage.BROKER, targetName);
+        addTag(builder, FIXMessage.DST, targetName);
+        addTag(builder, FIXMessage.RESULT, result.toString());
+        addTag(builder, FIXMessage.MESSAGE, message);
+        addTag(builder, FIXMessage.CHECKSUM, calculateChecksum(builder.toString()));
         return builder.toString();
     }
 
-    private void sendMessage(AsynchronousSocketChannel clientChannel, String fixMessage, String message, Result result) {
+    private void sendMessage(AsynchronousSocketChannel clientChannel, String fixMessage, String message, ResultMessage result) {
         final String targetName;
         try {
-            targetName = Common.getFixValueByTag(fixMessage, Tags.SRC_NAME);
+            targetName = Common.getFixValueByTag(fixMessage, FIXMessage.MARKET);
             Common.sendMessage(clientChannel, resultFixMessage(message, id, name, targetName, result));
 //        if (isInsertMessagesToDb()) {
 //            Database.insert(

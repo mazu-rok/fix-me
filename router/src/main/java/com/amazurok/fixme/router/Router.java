@@ -3,9 +3,9 @@ package com.amazurok.fixme.router;
 
 import com.amazurok.fixme.common.Common;
 import com.amazurok.fixme.common.handler.ChecksumValidator;
-import com.amazurok.fixme.common.handler.InternalMessageHandler;
+import com.amazurok.fixme.common.handler.ErrorMessageHandler;
+import com.amazurok.fixme.common.handler.FIXMessageMandatoryFieldsValidator;
 import com.amazurok.fixme.common.handler.MessageHandler;
-import com.amazurok.fixme.common.handler.TagsValidator;
 import com.amazurok.fixme.router.handler.MessageProcessor;
 import com.amazurok.fixme.router.handler.RouterCompletionHandler;
 import org.slf4j.Logger;
@@ -75,12 +75,12 @@ public class Router {
 //    }
 
     private MessageHandler getMessageHandler() {
-        final MessageHandler messageHandler = new InternalMessageHandler();
-        final MessageHandler mandatoryTagsValidator = new TagsValidator();
+        final MessageHandler messageHandler = new ErrorMessageHandler();
+        final MessageHandler mandatoryFieldsValidator = new FIXMessageMandatoryFieldsValidator();
         final MessageHandler checksumValidator = new ChecksumValidator();
         final MessageHandler messageParser = new MessageProcessor(routingTable, failedToSendMessages);
-        messageHandler.setNext(mandatoryTagsValidator);
-        mandatoryTagsValidator.setNext(checksumValidator);
+        messageHandler.setNext(mandatoryFieldsValidator);
+        mandatoryFieldsValidator.setNext(checksumValidator);
         checksumValidator.setNext(messageParser);
         return messageHandler;
     }

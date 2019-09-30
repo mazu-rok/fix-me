@@ -1,6 +1,6 @@
 package com.amazurok.fixme.common;
 
-public enum Result {
+public enum ResultMessage {
     EXECUTED,
     REJECTED;
 
