@@ -2,6 +2,7 @@ package com.amazurok.fixme.router.handler;
 
 import com.amazurok.fixme.common.Common;
 import com.amazurok.fixme.common.handler.MessageHandler;
+import com.google.common.base.Strings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -10,7 +11,6 @@ import java.nio.channels.AsynchronousServerSocketChannel;
 import java.nio.channels.AsynchronousSocketChannel;
 import java.nio.channels.CompletionHandler;
 import java.util.Map;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -27,60 +27,55 @@ public class RouterCompletionHandler implements CompletionHandler<AsynchronousSo
     private final MessageHandler messageHandler;
     private String clientName;
 
-    public RouterCompletionHandler(AsynchronousServerSocketChannel listener, Map<String, AsynchronousSocketChannel> routingTable,
-                            AtomicInteger id, MessageHandler messageHandler) {
+    public RouterCompletionHandler(AsynchronousServerSocketChannel listener,
+                                   Map<String, AsynchronousSocketChannel> routingTable,
+                                   AtomicInteger id,
+                                   MessageHandler messageHandler) {
         this.listener = listener;
         this.routingTable = routingTable;
         this.id = id;
         this.messageHandler = messageHandler;
     }
 
-
-
     @Override
     public void completed(AsynchronousSocketChannel channel, Object attachment) {
         listener.accept(null, this);
-        final ByteBuffer buffer = ByteBuffer.allocate(Common.BUFFER_SIZE);
-        clientName = Common.readMessage(channel, buffer);
 
-        sendClientId(channel, getNextId());
+        final ByteBuffer buffer = ByteBuffer.allocate(Common.BUFFER_SIZE);
+        clientName = Common.readMessage(channel, buffer); //TODO check it
+
+        saveAndsendClientId(channel, getNextId());
 
         while (true) {
             final String message = Common.readMessage(channel, buffer);
-            if (Common.EMPTY_MESSAGE.equals(message)) {
+            if (Strings.isNullOrEmpty(message)) {
                 break;
             }
             executor.execute(() -> messageHandler.handle(channel, message));
         }
-        endConnection();
+        closeConnection();
     }
 
     @Override
     public void failed(Throwable exc, Object attachment) {
         log.warn("Force connection termination");
-        endConnection();
+        closeConnection();
     }
-
-
-
-    private void sendClientId(AsynchronousSocketChannel channel, String currentId) {
-        log.info(String.format("Client '%s' connected with ID: %s", clientName, currentId));
-        Common.sendMessage(channel, currentId);
-        routingTable.put(clientName, channel);
-//        printRoutingTable();
-    }
-
-    private void endConnection() {
-        routingTable.remove(clientName);
-        log.info(String.format("Client '%s' disconnected", clientName));
-//        printRoutingTable();
-    }
-
-//    private void printRoutingTable() {
-//        System.out.println("Routing table: " + routingTable.keySet().toString());
-//    }
 
     private String getNextId() {
-        return String.format("%d", id.getAndIncrement());
+        return String.valueOf(id.getAndIncrement());
+    }
+
+    private void saveAndsendClientId(AsynchronousSocketChannel channel, String currentId) {
+        routingTable.put(clientName, channel);
+        log.info(String.format("Client '%s' connected with ID: %s", clientName, currentId));
+        Common.sendMessage(channel, currentId);
+        log.debug(String.format("\tRouting table\n%s", routingTable.keySet()));
+    }
+
+    private void closeConnection() {
+        routingTable.remove(clientName);
+        log.info(String.format("Client '%s' disconnected", clientName));
+        log.debug(String.format("\tRouting table\n%s", routingTable.keySet()));
     }
 }

@@ -1,9 +1,10 @@
 package com.amazurok.fixme.common;
 
 import com.amazurok.fixme.common.handler.ChecksumValidator;
-import com.amazurok.fixme.common.handler.InternalMessageHandler;
+import com.amazurok.fixme.common.handler.ErrorMessageHandler;
+import com.amazurok.fixme.common.handler.FIXMessageMandatoryFieldsValidator;
 import com.amazurok.fixme.common.handler.MessageHandler;
-import com.amazurok.fixme.common.handler.TagsValidator;
+import com.google.common.base.Strings;
 import lombok.Getter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,8 +14,10 @@ import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousSocketChannel;
 import java.nio.channels.CompletionHandler;
+import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 public class Client {
     private static Logger log = LoggerFactory.getLogger(Client.class);
@@ -34,40 +37,43 @@ public class Client {
         this.name = name;
     }
 
-    private AsynchronousSocketChannel connectToMessageRouter() {
+    private AsynchronousSocketChannel connectToRouter() {
         final AsynchronousSocketChannel socketChannel;
         try {
             socketChannel = AsynchronousSocketChannel.open();
             final Future future = socketChannel.connect(new InetSocketAddress(Common.HOST, port));
             future.get();
         } catch (IOException | InterruptedException | ExecutionException e) {
-            System.out.println("Could not connect to Message Router, reconnecting...");
+            log.error("Could not connect to Router, trying to reconnect...");
             try {
-                Thread.sleep(1000);
-            } catch (InterruptedException ignored) {
+                TimeUnit.SECONDS.sleep(1);
+            } catch (InterruptedException ex) {
+                log.error(ex.getMessage());
             }
-            return connectToMessageRouter();
+            return connectToRouter();
         }
         return socketChannel;
     }
 
     protected AsynchronousSocketChannel getSocketChannel() {
-        if (socketChannel == null) {
-            socketChannel = connectToMessageRouter();
+        if (Objects.isNull(socketChannel)) {
+            socketChannel = connectToRouter();
             Common.sendMessage(socketChannel, name);
             id = Common.readMessage(socketChannel, buffer);
-            System.out.println(name + " ID: " + id);
+            log.info("Connected to Router with name '{}' and ID '{}'", name, id);
             return socketChannel;
         }
         return socketChannel;
     }
 
     protected MessageHandler getMessageHandler() {
-        final MessageHandler messageHandler = new InternalMessageHandler();
-        final MessageHandler mandatoryTagsValidator = new TagsValidator();
+        final MessageHandler messageHandler = new ErrorMessageHandler();
+        final MessageHandler mandatoryFieldsValidator = new FIXMessageMandatoryFieldsValidator();
         final MessageHandler checksumValidator = new ChecksumValidator();
-        messageHandler.setNext(mandatoryTagsValidator);
-        mandatoryTagsValidator.setNext(checksumValidator);
+
+        messageHandler.setNext(mandatoryFieldsValidator);
+        mandatoryFieldsValidator.setNext(checksumValidator);
+
         return messageHandler;
     }
 
@@ -76,7 +82,7 @@ public class Client {
             @Override
             public void completed(Integer result, Object attachment) {
                 final String message = Common.read(result, buffer);
-                if (!Common.EMPTY_MESSAGE.equals(message)) {
+                if (!Strings.isNullOrEmpty(message)) {
                     getMessageHandler().handle(getSocketChannel(), message);
                     getSocketChannel().read(buffer, null, this);
                 } else {
@@ -90,7 +96,7 @@ public class Client {
             }
 
             private void reconnect() {
-                log.warn("Message router died! Have to reconnect");
+                log.warn("Message router doesn't exist! Trying to reconnect");
                 socketChannel = null;
                 getSocketChannel().read(buffer, null, this);
             }

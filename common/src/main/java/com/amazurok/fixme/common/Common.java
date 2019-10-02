@@ -21,12 +21,10 @@ public class Common {
     public static final int BROKER_PORT = 5000;
     public static final int MARKET_PORT = 5001;
     public static final int BUFFER_SIZE = 4096;
-    public static final String VALUE_DELIMITER = "=";
     public static final String ERROR_MESSAGE = "ERROR_MESSAGE:";
-    public static final String EMPTY_MESSAGE = "";
 
-
-    private static final String FIELD_DELIMITER = "|";
+    public static final String VALUES_DELIMITER = "=";
+    private static final String FIELDS_DELIMITER = "|";
 
 
     public static Future<Integer> sendMessage(AsynchronousSocketChannel channel, String message) {
@@ -38,7 +36,7 @@ public class Common {
         try {
             return read(channel.read(readBuffer).get(), readBuffer);
         } catch (InterruptedException | ExecutionException e) {
-            return EMPTY_MESSAGE;
+            return "";
         }
     }
 
@@ -61,17 +59,17 @@ public class Common {
         return DatatypeConverter.printHexBinary(hash).toLowerCase();
     }
 
-    public static void addTag(StringBuilder builder, FIXMessage tag, String value) {
-        builder.append(tag.ordinal())
-                .append(VALUE_DELIMITER)
+    public static void addFieldToMessage(StringBuilder builder, FIXMessage field, String value) {
+        builder.append(field.ordinal())
+                .append(VALUES_DELIMITER)
                 .append(value)
-                .append(FIELD_DELIMITER);
+                .append(FIELDS_DELIMITER);
     }
 
     //TODO: Add regex
     public static String getValueFromFIXMesage(String fixMessage, FIXMessage field) throws NotFoundException {
-        final String[] tagValues = fixMessage.split(Pattern.quote(FIELD_DELIMITER));
-        final String searchPattern = field.ordinal() + VALUE_DELIMITER;
+        final String[] tagValues = fixMessage.split(Pattern.quote(FIELDS_DELIMITER));
+        final String searchPattern = field.ordinal() + VALUES_DELIMITER;
         for (String tagValue : tagValues) {
             if (tagValue.startsWith(searchPattern)) {
                 return tagValue.substring(searchPattern.length());
