@@ -3,7 +3,7 @@ package com.amazurok.fixme.market;
 import com.amazurok.fixme.common.Client;
 import com.amazurok.fixme.common.Common;
 import com.amazurok.fixme.common.handler.MessageHandler;
-import com.amazurok.fixme.market.handler.MarketTagsValidator;
+import com.amazurok.fixme.market.handler.FieldsValidator;
 import com.amazurok.fixme.market.handler.MessageExecutor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,28 +17,25 @@ import java.util.concurrent.TimeUnit;
 public class Market extends Client {
     private static Logger log = LoggerFactory.getLogger(Market.class);
 
-    private static final String[] PRODUCTS = {
-            "bolt", "nail", "screwdriver", "screw",
-            "hammer", "saw", "drill", "wrench", "knife",
-            "scissors", "toolbox", "tape", "needle"
+    public static final String[] INSTRUMENTS_FOR_TRADING = {
+            "MacBook", "Acer", "Asus", "Samsung", "Xiaomi", "HP"
     };
+    public static final Integer MAX_QUANTITY = 10;
+    public static final Integer MAX_PRICE = 10000;
 
     private static final String NAME_PREFIX = "M_";
-    private final Map<String, Integer> instruments;
+    private final Map<String, Integer> instrumentsForTrading;
 
     private Market(String name) {
         super(Common.MARKET_PORT, NAME_PREFIX + name);
-        instruments = getRandomInstruments();
-
+        instrumentsForTrading = generateRandomInstruments();
     }
 
-    private static Map<String, Integer> getRandomInstruments() {
-        final Map<String, Integer> instruments = new HashMap<String, Integer>();
+    private static Map<String, Integer> generateRandomInstruments() {
+        final Map<String, Integer> instruments = new HashMap<>();
         final Random random = new Random();
-        for(String instrument : PRODUCTS) {
-            if (random.nextBoolean()) {
-                instruments.put(instrument, random.nextInt(9) + 1);
-            }
+        for(String instrument : INSTRUMENTS_FOR_TRADING) {
+            instruments.put(instrument, random.nextInt(MAX_QUANTITY));
         }
         return instruments;
     }
@@ -46,8 +43,9 @@ public class Market extends Client {
     @Override
     protected MessageHandler getMessageHandler() {
         final MessageHandler messageHandler = super.getMessageHandler();
-        final MessageHandler tagsValidator = new MarketTagsValidator(getId(), getName());
-        final MessageHandler messageExecutor = new MessageExecutor(getId(), getName(), instruments);
+        final MessageHandler tagsValidator = new FieldsValidator(getId(), getName());
+        final MessageHandler messageExecutor = new MessageExecutor(getId(), getName(), instrumentsForTrading);
+
         messageHandler.setNext(tagsValidator);
         tagsValidator.setNext(messageExecutor);
         return messageHandler;
@@ -55,14 +53,15 @@ public class Market extends Client {
 
     private void start() {
         log.info("The marker starts up ...");
-
         readFromSocket();
+        log.info("The marker started with next instruments {}", instrumentsForTrading);
 
         while (true) {
             try {
                 TimeUnit.SECONDS.sleep(1);
             } catch (InterruptedException e) {
                 log.error(e.getMessage());
+                return;
             }
         }
     }

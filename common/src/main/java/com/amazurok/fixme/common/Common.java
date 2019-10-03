@@ -11,7 +11,6 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 import java.util.regex.Pattern;
 
 public class Common {
@@ -26,10 +25,9 @@ public class Common {
     public static final String VALUES_DELIMITER = "=";
     private static final String FIELDS_DELIMITER = "|";
 
-
-    public static Future<Integer> sendMessage(AsynchronousSocketChannel channel, String message) {
+    public static void sendMessage(AsynchronousSocketChannel channel, String message) {
         log.info(String.format("Send message: %s", message));
-        return channel.write(ByteBuffer.wrap(message.getBytes()));
+        channel.write(ByteBuffer.wrap(message.getBytes()));
     }
 
     public static String readMessage(AsynchronousSocketChannel channel, ByteBuffer readBuffer) {
@@ -47,10 +45,10 @@ public class Common {
             readBuffer.get(bytes, 0, bytesRead);
             readBuffer.clear();
             String message = new String(bytes);
-            System.out.println("Got: " + message);
+            log.info("Read message: {}", message);
             return message;
         }
-        return EMPTY_MESSAGE;
+        return "";
     }
 
     public static String getChecksum(String message) throws NoSuchAlgorithmException {

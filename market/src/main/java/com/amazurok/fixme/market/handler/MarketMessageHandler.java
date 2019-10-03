@@ -4,13 +4,14 @@ import com.amazurok.fixme.common.Common;
 import com.amazurok.fixme.common.FIXMessage;
 import com.amazurok.fixme.common.ResultMessage;
 import com.amazurok.fixme.common.handler.MessageHandler;
+import lombok.Getter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.channels.AsynchronousSocketChannel;
+import java.security.NoSuchAlgorithmException;
 
-import static com.amazurok.fixme.common.Common.addTag;
-import static com.amazurok.fixme.common.Common.calculateChecksum;
+import static com.amazurok.fixme.common.Common.*;
 
 public abstract class MarketMessageHandler extends MessageHandler {
     private static Logger log = LoggerFactory.getLogger(MarketMessageHandler.class);
@@ -24,6 +25,7 @@ public abstract class MarketMessageHandler extends MessageHandler {
     }
 
     protected void rejectedMessage(AsynchronousSocketChannel clientChannel, String fixMessage, String message) {
+        log.error(message);
         sendMessage(clientChannel, fixMessage, message, ResultMessage.REJECTED);
     }
 
@@ -31,23 +33,22 @@ public abstract class MarketMessageHandler extends MessageHandler {
         sendMessage(clientChannel, fixMessage, message, ResultMessage.EXECUTED);
     }
 
-    public static String resultFixMessage(String message, String id, String srcName, String targetName, ResultMessage result) {
+    private String resultFixMessage(String message, String brokerName, ResultMessage result) throws NoSuchAlgorithmException {
         final StringBuilder builder = new StringBuilder();
-        addTag(builder, FIXMessage.ID, id);
-        addTag(builder, FIXMessage.MARKET, srcName);
-        addTag(builder, FIXMessage.BROKER, targetName);
-        addTag(builder, FIXMessage.DST, targetName);
-        addTag(builder, FIXMessage.RESULT, result.toString());
-        addTag(builder, FIXMessage.MESSAGE, message);
-        addTag(builder, FIXMessage.CHECKSUM, calculateChecksum(builder.toString()));
+        addFieldToMessage(builder, FIXMessage.ID, id);
+        addFieldToMessage(builder, FIXMessage.MARKET, name);
+        addFieldToMessage(builder, FIXMessage.BROKER, brokerName);
+        addFieldToMessage(builder, FIXMessage.DST, brokerName);
+        addFieldToMessage(builder, FIXMessage.RESULT, result.toString());
+        addFieldToMessage(builder, FIXMessage.MESSAGE, message);
+        addFieldToMessage(builder, FIXMessage.CHECKSUM, getChecksum(builder.toString()));
         return builder.toString();
     }
 
     private void sendMessage(AsynchronousSocketChannel clientChannel, String fixMessage, String message, ResultMessage result) {
-        final String targetName;
         try {
-            targetName = Common.getFixValueByTag(fixMessage, FIXMessage.MARKET);
-            Common.sendMessage(clientChannel, resultFixMessage(message, id, name, targetName, result));
+            String brokerName = Common.getValueFromFIXMesage(fixMessage, FIXMessage.BROKER);
+            Common.sendMessage(clientChannel, resultFixMessage(message, brokerName, result));
 //        if (isInsertMessagesToDb()) {
 //            Database.insert(
 //                    name,
@@ -65,8 +66,8 @@ public abstract class MarketMessageHandler extends MessageHandler {
         }
     }
 
-    protected boolean isInsertMessagesToDb() {
-        return false;
-    }
+//    protected boolean isInsertMessagesToDb() {
+//        return false;
+//    }
 }
 

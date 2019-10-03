@@ -5,6 +5,6 @@ public enum MessageType {
     SELL;
 
     public static boolean is(String type) {
-        return type.toUpperCase().equals(BUY.toString()) || type.equals(SELL.toString());
+        return type.toUpperCase().equals(BUY.toString()) || type.toUpperCase().equals(SELL.toString());
     }
 }

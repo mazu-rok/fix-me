@@ -1,7 +1,7 @@
 package com.amazurok.fixme.broker;
 
 import com.amazurok.fixme.broker.handler.ExecutionResult;
-import com.amazurok.fixme.broker.handler.ResultTagValidator;
+import com.amazurok.fixme.broker.handler.ResultValidator;
 import com.amazurok.fixme.common.Client;
 import com.amazurok.fixme.common.Common;
 import com.amazurok.fixme.common.FIXMessage;
@@ -12,8 +12,6 @@ import org.slf4j.LoggerFactory;
 
 import java.security.NoSuchAlgorithmException;
 import java.util.Scanner;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 
 import static com.amazurok.fixme.common.Common.addFieldToMessage;
 
@@ -33,7 +31,7 @@ public class Broker extends Client {
     private static String createFIXMessage(String input, String id, String name) throws IllegalInputException, NoSuchAlgorithmException {
         final String[] m = input.split(INPUT_MESSAGE_DELIMITER);
         if (m.length != 5) {
-            throw new IllegalInputException("Wrong input, should be: " + INPUT_MESSAGE_FORMAT);
+            throw new IllegalInputException(String.format("Unacceptable input, example: %s", INPUT_MESSAGE_FORMAT));
         }
         final StringBuilder message = new StringBuilder();
         addFieldToMessage(message, FIXMessage.ID, id);
@@ -57,11 +55,10 @@ public class Broker extends Client {
         while (true) {
             try {
                 final String message = createFIXMessage(inputScanner.nextLine(), getId(), getName());
-                final Future<Integer> result = Common.sendMessage(getSocketChannel(), message);
-                result.get();
+                Common.sendMessage(getSocketChannel(), message);
             } catch (IllegalInputException e) {
                 log.error("Not valid input, try again: {}", e.getMessage());
-            } catch (InterruptedException | ExecutionException | NoSuchAlgorithmException e) {
+            } catch (NoSuchAlgorithmException e) {
                 log.error(e.getMessage());
                 return;
             }
@@ -71,8 +68,9 @@ public class Broker extends Client {
     @Override
     protected MessageHandler getMessageHandler() {
         final MessageHandler messageHandler = super.getMessageHandler();
-        final MessageHandler resultTag = new ResultTagValidator();
+        final MessageHandler resultTag = new ResultValidator();
         final MessageHandler executionResult = new ExecutionResult();
+
         messageHandler.setNext(resultTag);
         resultTag.setNext(executionResult);
         return messageHandler;

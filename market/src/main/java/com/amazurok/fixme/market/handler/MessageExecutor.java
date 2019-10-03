@@ -2,6 +2,7 @@ package com.amazurok.fixme.market.handler;
 
 import com.amazurok.fixme.common.Common;
 import com.amazurok.fixme.common.FIXMessage;
+import com.amazurok.fixme.common.exception.NotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -11,44 +12,43 @@ import java.util.Map;
 public class MessageExecutor extends MarketMessageHandler {
     private static Logger log = LoggerFactory.getLogger(MessageExecutor.class);
 
-    private final Map<String, Integer> instruments;
+    private final Map<String, Integer> instrumentsFortrading;
 
     public MessageExecutor(String clientId, String name, Map<String, Integer> instruments) {
         super(clientId, name);
-        this.instruments = instruments;
+        this.instrumentsFortrading = instruments;
     }
 
     @Override
     public void handle(AsynchronousSocketChannel clientChannel, String message) {
         try {
-            final String instrument = Common.getFixValueByTag(message, FIXMessage.INSTRUMENT);
-            if (instruments.containsKey(instrument)) {
-                final int quantity = Integer.parseInt(Common.getFixValueByTag(message, FIXMessage.QUANTITY));
-                final int marketQuantity = instruments.get(instrument);
-                final String type = Common.getFixValueByTag(message, FIXMessage.ACTION);
-                if (type.equals(MessageType.BUY.toString())) {
-                    if (marketQuantity < quantity) {
+            final String instrument = Common.getValueFromFIXMesage(message, FIXMessage.INSTRUMENT);
+            final int quantity = Integer.parseInt(Common.getValueFromFIXMesage(message, FIXMessage.QUANTITY));
+            final String type = Common.getValueFromFIXMesage(message, FIXMessage.ACTION);
+            int availableQuantity = instrumentsFortrading.get(instrument);
+            switch (MessageType.valueOf(type)) {
+                case BUY:
+                    if (availableQuantity <= quantity) {
                         rejectedMessage(clientChannel, message, "Not enough instruments");
-                        return;
                     } else {
-                        instruments.put(instrument, marketQuantity - quantity);
+                        instrumentsFortrading.put(instrument, availableQuantity - quantity);
+                        log.info(String.format("%d laptops %s sold", quantity, instrument));
                     }
-                } else {
-                    instruments.put(instrument, marketQuantity + quantity);
-                }
-                log.info("Market instruments: " + instruments.toString());
-                executedMessage(clientChannel, message, "OK");
-            } else {
-                rejectedMessage(clientChannel, message, instrument + " instrument is not traded on the market");
+                    break;
+                case SELL:
+                    instrumentsFortrading.put(instrument, availableQuantity + quantity);
+                    log.info(String.format("%d %s purchased", quantity, instrument));
             }
-        } catch (Exception e) {
+            log.info("Available instruments: " + instrumentsFortrading.toString());
+            executedMessage(clientChannel, message, "OK");
+        } catch (NotFoundException e) {
             log.error(e.getMessage());
         }
     }
 
-    @Override
-    protected boolean isInsertMessagesToDb() {
-        return true;
-    }
+//    @Override
+//    protected boolean isInsertMessagesToDb() {
+//        return true;
+//    }
 }
 
