@@ -15,7 +15,7 @@ public class ExecutionResult extends MessageHandler {
     public void handle(AsynchronousSocketChannel clientChannel, String message) {
         try {
             final String result = Common.getValueFromFIXMesage(message, FIXMessage.RESULT);
-            final String resultMessage = Common.getValueFromFIXMesage(message, FIXMessage.MESSAGE); // TODO: why ?
+            final String resultMessage = Common.getValueFromFIXMesage(message, FIXMessage.MESSAGE);
 
             log.info("Operation result: {} - {}", result, resultMessage);
             super.handle(clientChannel, message);

@@ -7,6 +7,7 @@ import com.amazurok.fixme.market.Market;
 
 import java.nio.channels.AsynchronousSocketChannel;
 import java.util.Arrays;
+import java.util.Collection;
 
 public class FieldsValidator extends MarketMessageHandler {
 
@@ -24,7 +25,7 @@ public class FieldsValidator extends MarketMessageHandler {
             if (!Arrays.asList(Market.INSTRUMENTS_FOR_TRADING).contains(instrument)) {
                 rejectedMessage(clientChannel, message,
                         String.format("Instrument not found, please, select from the list: %s",
-                                Market.INSTRUMENTS_FOR_TRADING)); // TODO: Check it
+                                Arrays.asList(Market.INSTRUMENTS_FOR_TRADING)));
                 return;
             }
             if (quantity <= 0 || (quantity > Market.MAX_QUANTITY && MessageType.is(type))) {

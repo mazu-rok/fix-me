@@ -49,25 +49,9 @@ public abstract class MarketMessageHandler extends MessageHandler {
         try {
             String brokerName = Common.getValueFromFIXMesage(fixMessage, FIXMessage.BROKER);
             Common.sendMessage(clientChannel, resultFixMessage(message, brokerName, result));
-//        if (isInsertMessagesToDb()) {
-//            Database.insert(
-//                    name,
-//                    targetName,
-//                    Core.getFixValueByTag(fixMessage, Tags.ACTION),
-//                    Core.getFixValueByTag(fixMessage, Tags.PRODUCT),
-//                    Core.getFixValueByTag(fixMessage, Tags.PRICE),
-//                    Core.getFixValueByTag(fixMessage, Tags.AMOUNT),
-//                    result.toString(),
-//                    message);
-//            Database.selectAll();
-//        }
         } catch (Exception e) {
             log.error(e.getMessage());
         }
     }
-
-//    protected boolean isInsertMessagesToDb() {
-//        return false;
-//    }
 }
 

@@ -6,7 +6,7 @@ import com.amazurok.fixme.common.exception.NotFoundException;
 
 import java.nio.channels.AsynchronousSocketChannel;
 
-public class FIXMessageMandatoryFieldsValidator extends MessageHandler {
+public class FIXMessageMandatoryBrokerFieldsValidator extends MessageHandler {
     @Override
     public void handle(AsynchronousSocketChannel clientChannel, String message) {
         try {

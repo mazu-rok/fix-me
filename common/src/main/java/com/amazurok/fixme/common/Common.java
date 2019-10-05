@@ -1,5 +1,6 @@
 package com.amazurok.fixme.common;
 
+import com.amazurok.fixme.common.exception.IllegalInputException;
 import com.amazurok.fixme.common.exception.NotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -11,6 +12,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.concurrent.ExecutionException;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class Common {
@@ -30,12 +32,13 @@ public class Common {
         channel.write(ByteBuffer.wrap(message.getBytes()));
     }
 
-    public static String readMessage(AsynchronousSocketChannel channel, ByteBuffer readBuffer) {
-        try {
-            return read(channel.read(readBuffer).get(), readBuffer);
-        } catch (InterruptedException | ExecutionException e) {
-            return "";
+    public static String readMessage(AsynchronousSocketChannel channel, ByteBuffer readBuffer)
+            throws IllegalInputException, ExecutionException, InterruptedException {
+        String message = read(channel.read(readBuffer).get(), readBuffer);
+        if (message.startsWith(Common.ERROR_MESSAGE)) {
+            throw new IllegalInputException(message);
         }
+        return message;
     }
 
     public static String read(int bytesRead, ByteBuffer readBuffer) {
@@ -64,15 +67,14 @@ public class Common {
                 .append(FIELDS_DELIMITER);
     }
 
-    //TODO: Add regex
     public static String getValueFromFIXMesage(String fixMessage, FIXMessage field) throws NotFoundException {
-        final String[] tagValues = fixMessage.split(Pattern.quote(FIELDS_DELIMITER));
-        final String searchPattern = field.ordinal() + VALUES_DELIMITER;
-        for (String tagValue : tagValues) {
-            if (tagValue.startsWith(searchPattern)) {
-                return tagValue.substring(searchPattern.length());
-            }
+        String regex = String.format("(?<=(%d)%s)(.*?)(?=\\%s)", field.ordinal(), VALUES_DELIMITER, FIELDS_DELIMITER);
+        Pattern pattern = Pattern.compile(regex);
+        Matcher matcher = pattern.matcher(fixMessage);
+        if (matcher.find()) {
+            return matcher.group(0);
         }
+
         throw new NotFoundException(String.format("Field value '%s' not found in message '%s'", field, fixMessage));
     }
 

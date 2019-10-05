@@ -24,10 +24,9 @@ public class ChecksumValidator extends MessageHandler{
         }
     }
 
-    //TODO: Add regex
     private static String getMessageWithoutChecksum(String fixMessage) {
-        final int checksumIndex = fixMessage.lastIndexOf(FIXMessage.CHECKSUM.ordinal() + Common.VALUES_DELIMITER);
-        return fixMessage.substring(0, checksumIndex);
+        String regex = String.format("(%d)%s.*$", FIXMessage.CHECKSUM.ordinal(), Common.VALUES_DELIMITER);
+        return fixMessage.replaceAll(regex, "");
     }
 
 }

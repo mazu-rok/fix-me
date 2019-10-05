@@ -16,6 +16,7 @@ import java.util.concurrent.TimeUnit;
 
 public class Market extends Client {
     private static Logger log = LoggerFactory.getLogger(Market.class);
+    private final DBController db = new DBController();
 
     public static final String[] INSTRUMENTS_FOR_TRADING = {
             "MacBook", "Acer", "Asus", "Samsung", "Xiaomi", "HP"
@@ -23,11 +24,10 @@ public class Market extends Client {
     public static final Integer MAX_QUANTITY = 10;
     public static final Integer MAX_PRICE = 10000;
 
-    private static final String NAME_PREFIX = "M_";
     private final Map<String, Integer> instrumentsForTrading;
 
     private Market(String name) {
-        super(Common.MARKET_PORT, NAME_PREFIX + name);
+        super(Common.MARKET_PORT, name);
         instrumentsForTrading = generateRandomInstruments();
     }
 
@@ -44,7 +44,7 @@ public class Market extends Client {
     protected MessageHandler getMessageHandler() {
         final MessageHandler messageHandler = super.getMessageHandler();
         final MessageHandler tagsValidator = new FieldsValidator(getId(), getName());
-        final MessageHandler messageExecutor = new MessageExecutor(getId(), getName(), instrumentsForTrading);
+        final MessageHandler messageExecutor = new MessageExecutor(getId(), getName(), instrumentsForTrading, db);
 
         messageHandler.setNext(tagsValidator);
         tagsValidator.setNext(messageExecutor);
@@ -52,7 +52,6 @@ public class Market extends Client {
     }
 
     private void start() {
-        log.info("The marker starts up ...");
         readFromSocket();
         log.info("The marker started with next instruments {}", instrumentsForTrading);
 
@@ -67,6 +66,7 @@ public class Market extends Client {
     }
 
     public static void main(String[] args) {
+        log.info("The marker starts up ...");
         if (args.length == 1) {
             new Market(args[0]).start();
         } else {

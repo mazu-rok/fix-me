@@ -1,8 +1,8 @@
 package com.amazurok.fixme.common;
 
+import com.amazurok.fixme.common.exception.IllegalInputException;
 import com.amazurok.fixme.common.handler.ChecksumValidator;
 import com.amazurok.fixme.common.handler.ErrorMessageHandler;
-import com.amazurok.fixme.common.handler.FIXMessageMandatoryFieldsValidator;
 import com.amazurok.fixme.common.handler.MessageHandler;
 import com.google.common.base.Strings;
 import lombok.Getter;
@@ -59,7 +59,12 @@ public class Client {
         if (Objects.isNull(socketChannel)) {
             socketChannel = connectToRouter();
             Common.sendMessage(socketChannel, name);
-            id = Common.readMessage(socketChannel, buffer);
+            try {
+                id = Common.readMessage(socketChannel, buffer);
+            } catch (IllegalInputException | ExecutionException | InterruptedException e) {
+                log.error(e.getMessage());
+                System.exit(1);
+            }
             log.info("Connected to Router with name '{}' and ID '{}'", name, id);
             return socketChannel;
         }
@@ -68,11 +73,9 @@ public class Client {
 
     protected MessageHandler getMessageHandler() {
         final MessageHandler messageHandler = new ErrorMessageHandler();
-        final MessageHandler mandatoryFieldsValidator = new FIXMessageMandatoryFieldsValidator();
         final MessageHandler checksumValidator = new ChecksumValidator();
 
-        messageHandler.setNext(mandatoryFieldsValidator);
-        mandatoryFieldsValidator.setNext(checksumValidator);
+        messageHandler.setNext(checksumValidator);
 
         return messageHandler;
     }

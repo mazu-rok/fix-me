@@ -21,11 +21,8 @@ public class Broker extends Client {
     private static final String INPUT_MESSAGE_DELIMITER = " ";
     private static final String INPUT_MESSAGE_FORMAT = "'MARKET_NAME BUY_OR_SELL PRODUCT_NAME AMOUNT PRICE'";
 
-    private static final String NAME_PREFIX = "B_";
-
-
     public Broker(String name) {
-        super(Common.BROKER_PORT, NAME_PREFIX + name);
+        super(Common.BROKER_PORT, name);
     }
 
     private static String createFIXMessage(String input, String id, String name) throws IllegalInputException, NoSuchAlgorithmException {
@@ -51,10 +48,9 @@ public class Broker extends Client {
         readFromSocket();
 
         final Scanner inputScanner = new Scanner(System.in);
-//            log.info("Message to send " + INPUT_MESSAGE_FORMAT + ":"); // TODO: why ?
         while (true) {
             try {
-                final String message = createFIXMessage(inputScanner.nextLine(), getId(), getName());
+                final String message = createFIXMessage(inputScanner.nextLine(), getId(), getName()); // waiting for input
                 Common.sendMessage(getSocketChannel(), message);
             } catch (IllegalInputException e) {
                 log.error("Not valid input, try again: {}", e.getMessage());

@@ -2,10 +2,7 @@ package com.amazurok.fixme.router;
 
 
 import com.amazurok.fixme.common.Common;
-import com.amazurok.fixme.common.handler.ChecksumValidator;
-import com.amazurok.fixme.common.handler.ErrorMessageHandler;
-import com.amazurok.fixme.common.handler.FIXMessageMandatoryFieldsValidator;
-import com.amazurok.fixme.common.handler.MessageHandler;
+import com.amazurok.fixme.common.handler.*;
 import com.amazurok.fixme.router.handler.MessageSender;
 import com.amazurok.fixme.router.handler.RouterCompletionHandler;
 import org.slf4j.Logger;
@@ -18,6 +15,8 @@ import java.nio.channels.AsynchronousSocketChannel;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -27,26 +26,27 @@ public class Router {
     private static final int INITIAL_ID = 100000;
     private final AtomicInteger ID = new AtomicInteger(INITIAL_ID);
 
-    private final Map<String, AsynchronousSocketChannel> routingTable = new ConcurrentHashMap<>(); //TODO: separate to 2 Table ?
-    private final Map<String, String> failedMessages = new ConcurrentHashMap<>();
+    private final Map<String, AsynchronousSocketChannel> routingTable = new ConcurrentHashMap<>();
 
+    private final Map<String, String> failedMessages = new ConcurrentHashMap<>();
+    private static final int EXECUTING_PERIOD_SEC = 15;
+    private final ScheduledExecutorService failedMessagesExecutor = Executors.newScheduledThreadPool(1);
 
     private void start() {
         log.info("The Router starts up ...");
 
         try {
-            final MessageHandler messageHandler = getMessageHandler();
-
             final AsynchronousServerSocketChannel brokersListener = AsynchronousServerSocketChannel.open()
                     .bind(new InetSocketAddress(Common.HOST, Common.BROKER_PORT));
             brokersListener.accept(null,
-                    new RouterCompletionHandler(brokersListener, routingTable, ID, messageHandler));
+                    new RouterCompletionHandler(brokersListener, routingTable, ID, getMessageHandlerForBroker()));
 
             final AsynchronousServerSocketChannel marketsListener = AsynchronousServerSocketChannel.open()
                     .bind(new InetSocketAddress(Common.HOST, Common.MARKET_PORT));
             marketsListener.accept(null,
-                    new RouterCompletionHandler(marketsListener, routingTable, ID, messageHandler));
+                    new RouterCompletionHandler(marketsListener, routingTable, ID, getMessageHandlerForMarket()));
 
+            failedMessagesExecutor.scheduleAtFixedRate(resendFailedMessages, 0, EXECUTING_PERIOD_SEC, TimeUnit.SECONDS);
             log.info("The Router is running!");
         } catch (IOException e) {
             log.error(e.getMessage());
@@ -56,13 +56,13 @@ public class Router {
                 TimeUnit.SECONDS.sleep(1);
             } catch (InterruptedException e) {
                 log.error(e.getMessage());
+                return;
             }
-            resendFailedMessages();
         }
 
     }
 
-    private void resendFailedMessages() {
+    private Runnable resendFailedMessages = () -> {
         if (!failedMessages.isEmpty()) {
             log.info("Trying to resend failed messages...");
             failedMessages.keySet().removeIf(dstName -> {
@@ -75,11 +75,12 @@ public class Router {
                 return false;
             });
         }
-    }
+    };
 
-    private MessageHandler getMessageHandler() {
+
+    private MessageHandler getMessageHandlerForBroker() {
         final MessageHandler messageHandler = new ErrorMessageHandler();
-        final MessageHandler mandatoryFieldsValidator = new FIXMessageMandatoryFieldsValidator();
+        final MessageHandler mandatoryFieldsValidator = new FIXMessageMandatoryBrokerFieldsValidator();
         final MessageHandler checksumValidator = new ChecksumValidator();
         final MessageHandler messageSender = new MessageSender(routingTable, failedMessages);
 
@@ -90,6 +91,18 @@ public class Router {
         return messageHandler;
     }
 
+    private MessageHandler getMessageHandlerForMarket() {
+        final MessageHandler messageHandler = new ErrorMessageHandler();
+        final MessageHandler mandatoryFieldsValidator = new FIXMessageMandatoryMarketFieldsValidator();
+        final MessageHandler checksumValidator = new ChecksumValidator();
+        final MessageHandler messageSender = new MessageSender(routingTable, failedMessages);
+
+        messageHandler.setNext(mandatoryFieldsValidator);
+        mandatoryFieldsValidator.setNext(checksumValidator);
+        checksumValidator.setNext(messageSender);
+
+        return messageHandler;
+    }
 
 
     public static void main(String[] args) {

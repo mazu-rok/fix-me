@@ -1,6 +1,7 @@
 package com.amazurok.fixme.router.handler;
 
 import com.amazurok.fixme.common.Common;
+import com.amazurok.fixme.common.exception.IllegalInputException;
 import com.amazurok.fixme.common.handler.MessageHandler;
 import com.google.common.base.Strings;
 import org.slf4j.Logger;
@@ -11,6 +12,7 @@ import java.nio.channels.AsynchronousServerSocketChannel;
 import java.nio.channels.AsynchronousSocketChannel;
 import java.nio.channels.CompletionHandler;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -42,16 +44,29 @@ public class RouterCompletionHandler implements CompletionHandler<AsynchronousSo
         listener.accept(null, this);
 
         final ByteBuffer buffer = ByteBuffer.allocate(Common.BUFFER_SIZE);
-        clientName = Common.readMessage(channel, buffer); //TODO check it
+        try {
+            clientName = Common.readMessage(channel, buffer);
+        } catch (IllegalInputException | ExecutionException | InterruptedException e) {
+            log.error(e.getMessage());
+        }
 
-        saveAndsendClientId(channel, getNextId());
+        try {
+            saveAndsendClientId(channel, getNextId());
+        } catch (IllegalInputException e) {
+            log.error(e.getMessage());
+            return;
+        }
 
         while (true) {
-            final String message = Common.readMessage(channel, buffer);
-            if (Strings.isNullOrEmpty(message)) {
-                break;
+            try {
+                final String message = Common.readMessage(channel, buffer);
+                if (Strings.isNullOrEmpty(message)) {
+                    break;
+                }
+                executor.execute(() -> messageHandler.handle(channel, message));
+            } catch (IllegalInputException | ExecutionException | InterruptedException e) {
+                log.error(e.getMessage());
             }
-            executor.execute(() -> messageHandler.handle(channel, message));
         }
         closeConnection();
     }
@@ -66,7 +81,11 @@ public class RouterCompletionHandler implements CompletionHandler<AsynchronousSo
         return String.valueOf(id.getAndIncrement());
     }
 
-    private void saveAndsendClientId(AsynchronousSocketChannel channel, String currentId) {
+    private void saveAndsendClientId(AsynchronousSocketChannel channel, String currentId) throws IllegalInputException {
+        if (routingTable.containsKey(clientName)) {
+            Common.sendErrorMessage(channel, String.format("Name '%s' is already exist", clientName));
+            throw new IllegalInputException(String.format("Name '%s' is already exist", clientName));
+        }
         routingTable.put(clientName, channel);
         log.info(String.format("Client '%s' connected with ID: %s", clientName, currentId));
         Common.sendMessage(channel, currentId);
